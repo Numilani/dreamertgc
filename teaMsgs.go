@@ -1,6 +1,8 @@
-package models
+package main
 
-type ErrMsg struct{}
+type ErrMsg struct {
+	ErrType ErrorState
+}
 
 type ServerConnectionEstablishedMsg struct{}
 
