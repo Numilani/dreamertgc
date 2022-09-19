@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"golang.org/x/term"
 	"os"
+	"strings"
 )
 
 type AppStage int
@@ -40,7 +41,7 @@ type AppMainModel struct {
 
 type AltWindow struct {
 	IsEnabled bool
-	Contents  string
+	Contents  []string
 }
 
 func (scr *AppMainModel) Init() tea.Cmd {
@@ -75,7 +76,7 @@ func (scr *AppMainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				case ServerConnectionTimeout:
 					scr.errorState = ServerConnectionTimeout
-					scr.altWindow.Contents += "\nServer Connection Failed. Retry? (Y/N)"
+					scr.altWindow.Contents = append(scr.altWindow.Contents, "Server Connection Failed. Retry? (Y/N)")
 					return scr, nil
 
 				}
@@ -106,12 +107,12 @@ func (scr *AppMainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					scr.primaryPane.ChatInput.Focus()
 				}
 				if scr.primaryPane.ChatInput.Focused() && len(scr.primaryPane.ChatInput.Value()) > 0 {
-					scr.secondaryPane.Contents += fmt.Sprintf("Sent msg: %v\n", scr.primaryPane.ChatInput.Value())
+					scr.secondaryPane.Contents = append(scr.secondaryPane.Contents, fmt.Sprintf("Sent msg: %v\n", scr.primaryPane.ChatInput.Value()))
 					scr.primaryPane.ChatInput.Reset()
 				}
 
 			case tea.KeyDelete:
-				scr.altWindow.Contents = fmt.Sprintf("chatFocused: %v \nchatContents: %v", scr.primaryPane.ChatInput.Focused(), scr.primaryPane.ChatInput.Value())
+				scr.altWindow.Contents = append(scr.altWindow.Contents, fmt.Sprintf("chatFocused: %v \nchatContents: %v", scr.primaryPane.ChatInput.Focused(), scr.primaryPane.ChatInput.Value()))
 				scr.altWindow.IsEnabled = !scr.altWindow.IsEnabled
 
 			case tea.KeyCtrlC, tea.KeyCtrlQ:
@@ -148,13 +149,13 @@ func RenderAltView(scr *AppMainModel) string {
 	mainStyle := lipgloss.NewStyle().
 		Width(w-2).Height(int(h-3)).Border(lipgloss.DoubleBorder(), true)
 
-	mainApp := mainStyle.Render(scr.altWindow.Contents)
+	mainApp := mainStyle.Render(strings.Join(scr.altWindow.Contents, "\n"))
 
 	return mainApp + "\n" + scr.statusBar.RenderStatusBar(w)
 }
 
 type ChatPane struct {
-	Contents      string
+	Contents      []string
 	ChatInput     textinput.Model
 	ChatIsFocused bool
 }
@@ -164,7 +165,7 @@ func (pp *ChatPane) RenderChatPane(w int, h int) string {
 		Width(int((w/3)*2)-1).Height(int(((2*h)/3)-2)).Border(lipgloss.DoubleBorder(), true)
 
 	chatHistory := viewport.New(int((w/3)*2)-1, int(((2*h)/3)-3))
-	chatHistory.SetContent(pp.Contents)
+	chatHistory.SetContent(strings.Join(pp.Contents, "\n"))
 
 	pp.ChatInput.TextStyle = lipgloss.NewStyle().Background(lipgloss.Color("#AFAFAF")).Foreground(lipgloss.Color("#000000"))
 	//pp.ChatInput.BackgroundStyle = lipgloss.NewStyle().Background(lipgloss.Color("#AFAFAF")).Foreground(lipgloss.Color("#000000"))
@@ -177,7 +178,7 @@ func (pp *ChatPane) RenderChatPane(w int, h int) string {
 }
 
 type SystemPane struct {
-	Contents     string
+	Contents     []string
 	commandInput textinput.Model
 }
 
@@ -185,7 +186,7 @@ func (sp *SystemPane) RenderCommandPane(w int, h int) string {
 	style := lipgloss.NewStyle().
 		Width(int((w/3)*2)-1).Height(int((h/3)-2)).Border(lipgloss.DoubleBorder(), true)
 
-	return style.Render(sp.Contents)
+	return style.Render(strings.Join(sp.Contents, "\n"))
 }
 
 type StatusBar struct {

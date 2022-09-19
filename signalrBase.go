@@ -77,7 +77,7 @@ func (scr *AppMainModel) Listen(ch chan ServerDataChunk) tea.Cmd { // TODO: This
 		switch chunk.Data.(type) {
 
 		case CharacterStatusData:
-			scr.infoPane.Contents = chunk.Data.(CharacterStatusData).Name + "\n    HP: " + strconv.Itoa(chunk.Data.(CharacterStatusData).Hp)
+			scr.infoPane.Contents = append(scr.infoPane.Contents, chunk.Data.(CharacterStatusData).Name+"\n    HP: "+strconv.Itoa(chunk.Data.(CharacterStatusData).Hp))
 			client.Invoke("Confirmed")
 		}
 

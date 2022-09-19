@@ -13,10 +13,10 @@ var appState = AppMainModel{
 	stage:         Starting,
 	errorState:    NoError,
 	rcv:           ServerEventReceiver{UiUpdateChannel: make(chan ServerDataChunk)},
-	altWindow:     AltWindow{IsEnabled: true, Contents: "Connecting to server..."},
-	infoPane:      CharacterPane{Contents: "Log in to view character Data"},
-	primaryPane:   ChatPane{Contents: "", ChatInput: textinput.New()},
-	secondaryPane: SystemPane{Contents: ""},
+	altWindow:     AltWindow{IsEnabled: true, Contents: []string{"Connecting to server..."}},
+	infoPane:      CharacterPane{Contents: []string{"Log in to view character Data"}},
+	primaryPane:   ChatPane{Contents: []string{""}, ChatInput: textinput.New()},
+	secondaryPane: SystemPane{Contents: []string{""}},
 	statusBar:     StatusBar{LeftBlurb: "NUMI'S TEST CLIENT", RightBlurb: "v0.01a", MiddleString: "L: Loading..."},
 }
 
