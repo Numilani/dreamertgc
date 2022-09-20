@@ -13,7 +13,7 @@ var appState = AppMainModel{
 	stage:         Starting,
 	errorState:    NoError,
 	rcv:           ServerEventReceiver{UiUpdateChannel: make(chan ServerDataChunk)},
-	altWindow:     AltWindow{IsEnabled: true, Contents: []string{"Connecting to server..."}},
+	altWindow:     AltWindow{IsFocused: true, Contents: []string{"Connecting to server..."}},
 	infoPane:      CharacterPane{Contents: []string{"Log in to view character Data"}},
 	primaryPane:   ChatPane{Contents: []string{""}, ChatInput: textinput.New()},
 	secondaryPane: SystemPane{Contents: []string{""}},

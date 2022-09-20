@@ -25,6 +25,7 @@ type ErrorState int
 const (
 	ServerConnectionTimeout ErrorState = iota
 	UnknownError
+	FatalError
 	NoError
 )
 
@@ -40,7 +41,7 @@ type AppMainModel struct {
 }
 
 type AltWindow struct {
-	IsEnabled bool
+	IsFocused bool
 	Contents  []string
 }
 
@@ -49,57 +50,52 @@ func (scr *AppMainModel) Init() tea.Cmd {
 }
 
 func (scr *AppMainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	// Handle system window msgs
-	if scr.altWindow.IsEnabled {
-		// handle error state inputs
-		if scr.errorState != NoError {
-			switch msg.(type) {
+	switch msg := msg.(type) {
 
-			case tea.KeyMsg:
-				if scr.errorState == ServerConnectionTimeout {
-					switch msg.(tea.KeyMsg).String() {
+	case ServerConnectionEstablishedMsg:
+		scr.altWindow.Contents = append(scr.altWindow.Contents, "Connected!")
+		scr.altWindow.IsFocused = !scr.altWindow.IsFocused
+		tea.ExitAltScreen()
+		scr.primaryPane.IsFocused = true
+		scr.primaryPane.ChatInput.Blink()
+		scr.primaryPane.ChatInput.Focus()
+		return scr, scr.Listen(scr.rcv.UiUpdateChannel) // needs to kick off some sort of listener for incoming signalR invokes
+
+	case ServerDataReceivedMsg:
+		return scr, scr.Listen(scr.rcv.UiUpdateChannel)
+
+	case ErrMsg:
+		switch msg.ErrType {
+
+		case ServerConnectionTimeout:
+			scr.errorState = ServerConnectionTimeout
+			scr.altWindow.Contents = append(scr.altWindow.Contents, "Server Connection Failed. Retry? (Y/N)")
+			return scr, nil
+
+		case FatalError:
+			return scr, tea.Quit
+
+		}
+
+	case tea.KeyMsg:
+		// altscreen keystroke handlers
+		if scr.altWindow.IsFocused {
+			if scr.errorState == ServerConnectionTimeout {
+				switch msg.Type {
+				case tea.KeyRunes:
+					switch string(msg.Runes) {
 					case "y":
 						scr.errorState = NoError
 						return scr, RunSignalRClient(&scr.rcv)
 					case "n":
 						return scr, tea.Quit
 					}
-
 				}
 			}
-			// handle non-errorstate inputs
-		} else {
-			switch msg := msg.(type) {
-
-			case ErrMsg:
-				switch msg.ErrType {
-
-				case ServerConnectionTimeout:
-					scr.errorState = ServerConnectionTimeout
-					scr.altWindow.Contents = append(scr.altWindow.Contents, "Server Connection Failed. Retry? (Y/N)")
-					return scr, nil
-
-				}
-			}
-
 		}
 
-		// handle normal window msgs
-	} else {
-		switch msg := msg.(type) {
-
-		case ErrMsg:
-			return scr, tea.Quit
-
-		case ServerConnectionEstablishedMsg:
-			scr.primaryPane.ChatInput.Blink()
-			scr.primaryPane.ChatInput.Focus()
-			return scr, scr.Listen(scr.rcv.UiUpdateChannel) // needs to kick off some sort of listener for incoming signalR invokes
-
-		case ServerDataReceivedMsg:
-			return scr, scr.Listen(scr.rcv.UiUpdateChannel)
-
-		case tea.KeyMsg:
+		// main screen keystroke handlers
+		if !scr.altWindow.IsFocused {
 			switch msg.Type {
 
 			case tea.KeyEnter:
@@ -110,24 +106,28 @@ func (scr *AppMainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					scr.secondaryPane.Contents = append(scr.secondaryPane.Contents, fmt.Sprintf("Sent msg: %v\n", scr.primaryPane.ChatInput.Value()))
 					scr.primaryPane.ChatInput.Reset()
 				}
-
-			case tea.KeyDelete:
-				scr.altWindow.Contents = append(scr.altWindow.Contents, fmt.Sprintf("chatFocused: %v \nchatContents: %v", scr.primaryPane.ChatInput.Focused(), scr.primaryPane.ChatInput.Value()))
-				scr.altWindow.IsEnabled = !scr.altWindow.IsEnabled
-
-			case tea.KeyCtrlC, tea.KeyCtrlQ:
-				return scr, tea.Quit
-
 			}
 
 			scr.primaryPane.ChatInput, _ = scr.primaryPane.ChatInput.Update(msg)
+		}
+
+		// universal keystroke handlers
+		switch msg.Type {
+		case tea.KeyF6: // toggle debug screen
+			scr.altWindow.IsFocused = !scr.altWindow.IsFocused
+
+		case tea.KeyCtrlD: // dump current state to debug screen
+			scr.altWindow.Contents = append(scr.altWindow.Contents, fmt.Sprintf("chatFocused: %v \nchatContents: %v", scr.primaryPane.ChatInput.Focused(), scr.primaryPane.ChatInput.Value()))
+
+		case tea.KeyCtrlQ: // exit program
+			return scr, tea.Quit
 		}
 	}
 	return scr, nil
 }
 
 func (scr *AppMainModel) View() string {
-	if scr.altWindow.IsEnabled {
+	if scr.altWindow.IsFocused {
 		return RenderAltView(scr)
 	} else {
 		return RenderMainView(scr)
@@ -155,9 +155,9 @@ func RenderAltView(scr *AppMainModel) string {
 }
 
 type ChatPane struct {
-	Contents      []string
-	ChatInput     textinput.Model
-	ChatIsFocused bool
+	IsFocused bool
+	Contents  []string
+	ChatInput textinput.Model
 }
 
 func (pp *ChatPane) RenderChatPane(w int, h int) string {
@@ -178,6 +178,7 @@ func (pp *ChatPane) RenderChatPane(w int, h int) string {
 }
 
 type SystemPane struct {
+	IsFocused    bool
 	Contents     []string
 	commandInput textinput.Model
 }

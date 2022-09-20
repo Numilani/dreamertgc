@@ -9,7 +9,8 @@ import (
 
 // CharacterPane handles the data for the leftmost pane of the main UI.
 type CharacterPane struct {
-	Contents []string
+	IsFocused bool
+	Contents  []string
 }
 
 func (ip *CharacterPane) RenderInfoPane(w int, h int) string {
