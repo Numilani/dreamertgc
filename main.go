@@ -15,8 +15,8 @@ var appState = AppMainModel{
 	rcv:           ServerEventReceiver{UiUpdateChannel: make(chan ServerDataChunk)},
 	altWindow:     AltWindow{IsFocused: true, Contents: []string{"Connecting to server..."}},
 	infoPane:      CharacterPane{Contents: []string{"Log in to view character Data"}},
-	primaryPane:   ChatPane{Contents: []string{""}, ChatInput: textinput.New()},
-	secondaryPane: SystemPane{Contents: []string{""}},
+	primaryPane:   ChatPane{Contents: []string{}, ChatInput: textinput.New()},
+	secondaryPane: SystemPane{Contents: []string{}},
 	statusBar:     StatusBar{LeftBlurb: "NUMI'S TEST CLIENT", RightBlurb: "v0.01a", MiddleString: "L: Loading..."},
 }
 

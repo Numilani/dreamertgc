@@ -94,16 +94,16 @@ func (scr *AppMainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
-		// main screen keystroke handlers
-		if !scr.altWindow.IsFocused {
+		// chat pane keystroke handlers
+		if scr.primaryPane.IsFocused {
 			switch msg.Type {
 
 			case tea.KeyEnter:
-				if !scr.primaryPane.ChatInput.Focused() {
-					scr.primaryPane.ChatInput.Focus()
-				}
 				if scr.primaryPane.ChatInput.Focused() && len(scr.primaryPane.ChatInput.Value()) > 0 {
-					scr.secondaryPane.Contents = append(scr.secondaryPane.Contents, fmt.Sprintf("Sent msg: %v\n", scr.primaryPane.ChatInput.Value()))
+					if string(scr.primaryPane.ChatInput.Value()[0]) == "/" {
+						scr.secondaryPane.Contents = append(scr.secondaryPane.Contents, fmt.Sprintf("Sent command: %v", scr.primaryPane.ChatInput.Value()))
+						scr.ProcessCommand(strings.Split(scr.primaryPane.ChatInput.Value(), " "))
+					}
 					scr.primaryPane.ChatInput.Reset()
 				}
 			}
@@ -111,10 +111,47 @@ func (scr *AppMainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			scr.primaryPane.ChatInput, _ = scr.primaryPane.ChatInput.Update(msg)
 		}
 
+		// system pane keystroke handlers
+		if scr.secondaryPane.IsFocused {
+			switch msg.Type {
+
+			}
+		}
+
+		// character pane keystroke handlers
+		if scr.infoPane.IsFocused {
+			switch msg.Type {
+
+			}
+		}
+
 		// universal keystroke handlers
 		switch msg.Type {
-		case tea.KeyF6: // toggle debug screen
-			scr.altWindow.IsFocused = !scr.altWindow.IsFocused
+		case tea.KeyF2: // focus chat pane
+			scr.primaryPane.IsFocused = true
+			scr.primaryPane.ChatInput.Focus()
+
+			scr.secondaryPane.IsFocused = false
+			scr.infoPane.IsFocused = false
+			scr.altWindow.IsFocused = false
+		case tea.KeyF3: // focus system pane
+			scr.secondaryPane.IsFocused = true
+
+			scr.primaryPane.IsFocused = false
+			scr.infoPane.IsFocused = false
+			scr.altWindow.IsFocused = false
+		case tea.KeyF4: // focus character pane
+			scr.infoPane.IsFocused = true
+
+			scr.primaryPane.IsFocused = false
+			scr.secondaryPane.IsFocused = false
+			scr.altWindow.IsFocused = false
+		case tea.KeyF5: // focus debug screen
+			scr.altWindow.IsFocused = true
+
+			scr.primaryPane.IsFocused = false
+			scr.secondaryPane.IsFocused = false
+			scr.infoPane.IsFocused = false
 
 		case tea.KeyCtrlD: // dump current state to debug screen
 			scr.altWindow.Contents = append(scr.altWindow.Contents, fmt.Sprintf("chatFocused: %v \nchatContents: %v", scr.primaryPane.ChatInput.Focused(), scr.primaryPane.ChatInput.Value()))
@@ -162,7 +199,7 @@ type ChatPane struct {
 
 func (pp *ChatPane) RenderChatPane(w int, h int) string {
 	style := lipgloss.NewStyle().
-		Width(int((w/3)*2)-1).Height(int(((2*h)/3)-2)).Border(lipgloss.DoubleBorder(), true)
+		Width(int((w/3)*2)-2).Height(int(((2*h)/3)-2)).Border(lipgloss.DoubleBorder(), true)
 
 	chatHistory := viewport.New(int((w/3)*2)-1, int(((2*h)/3)-3))
 	chatHistory.SetContent(strings.Join(pp.Contents, "\n"))
@@ -185,7 +222,7 @@ type SystemPane struct {
 
 func (sp *SystemPane) RenderCommandPane(w int, h int) string {
 	style := lipgloss.NewStyle().
-		Width(int((w/3)*2)-1).Height(int((h/3)-2)).Border(lipgloss.DoubleBorder(), true)
+		Width(int((w/3)*2)-2).Height(int((h/3)-2)).Border(lipgloss.DoubleBorder(), true)
 
 	return style.Render(strings.Join(sp.Contents, "\n"))
 }

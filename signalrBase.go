@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/go-kit/log"
 	"github.com/philippseith/signalr"
@@ -70,15 +71,29 @@ func RunSignalRClient(receiver *ServerEventReceiver) tea.Cmd {
 // Listen blocks its thread until a ServerDataChunk is received from the receiver
 // established in AppMainModel. The chunk is then processed according to caller and data type,
 // and the UI is updated accordingly.
-func (scr *AppMainModel) Listen(ch chan ServerDataChunk) tea.Cmd { // TODO: This should probably be moved to appUi.go to be with other AMM functions
+func (scr *AppMainModel) Listen(ch chan ServerDataChunk) tea.Cmd {
 	return func() tea.Msg {
 		var chunk = <-ch
 
-		switch chunk.Data.(type) {
+		switch chunk.CallerName {
 
-		case CharacterStatusData:
+		case "ReceivePlayerStats":
 			scr.infoPane.Contents = append(scr.infoPane.Contents, chunk.Data.(CharacterStatusData).Name+"\n    HP: "+strconv.Itoa(chunk.Data.(CharacterStatusData).Hp))
 			client.Invoke("Confirmed")
+
+		case "ReceiveLoginToken":
+			if chunk.Data.(string) == "invalid_credentials" {
+				scr.secondaryPane.Contents = append(scr.secondaryPane.Contents, fmt.Sprintf("Login rejected: %v", chunk.Data.(string)))
+				break
+			}
+			scr.secondaryPane.Contents = append(scr.secondaryPane.Contents, fmt.Sprintf("Login token received: %v", chunk.Data.(string)))
+
+		case "ReceiveSessionToken":
+			if chunk.Data.(string) == "invalid_usertoken" {
+				scr.secondaryPane.Contents = append(scr.secondaryPane.Contents, fmt.Sprintf("User token rejected: %v", chunk.Data.(string)))
+				break
+			}
+			scr.secondaryPane.Contents = append(scr.secondaryPane.Contents, fmt.Sprintf("Logged in, session token is: %v", chunk.Data.(string)))
 		}
 
 		return ServerDataReceivedMsg{}
