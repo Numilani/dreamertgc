@@ -69,17 +69,16 @@ func RunSignalRClient(receiver *ServerEventReceiver) tea.Cmd {
 // Its thread is created after a successful ServerConnectionEstablishedMsg is received.
 //
 // Listen blocks its thread until a ServerDataChunk is received from the receiver
-// established in AppMainModel. The chunk is then processed according to caller and data type,
+// established in AppModel. The chunk is then processed according to caller and data type,
 // and the UI is updated accordingly.
-func (scr *AppMainModel) Listen(ch chan ServerDataChunk) tea.Cmd {
+func (scr *AppModel) Listen(ch chan ServerDataChunk) tea.Cmd {
 	return func() tea.Msg {
 		var chunk = <-ch
 
 		switch chunk.CallerName {
 
 		case "ReceivePlayerStats":
-			scr.infoPane.Contents = append(scr.infoPane.Contents, chunk.Data.(CharacterStatusData).Name+"\n    HP: "+strconv.Itoa(chunk.Data.(CharacterStatusData).Hp))
-			client.Invoke("Confirmed")
+			scr.infoPane.Contents = chunk.Data.(CharacterStatusData).Name + "\n    HP: " + strconv.Itoa(chunk.Data.(CharacterStatusData).Hp)
 
 		case "ReceiveLoginToken":
 			if chunk.Data.(string) == "invalid_credentials" {

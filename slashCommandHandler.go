@@ -1,9 +1,19 @@
 package main
 
-import tea "github.com/charmbracelet/bubbletea"
+import (
+	tea "github.com/charmbracelet/bubbletea"
+	"golang.org/x/exp/slices"
+)
 
-func (scr *AppMainModel) ProcessCommand(cmdData []string) {
+func (scr *AppModel) ProcessCommand(cmdData []string) {
 	command := cmdData[0][1:]
+
+	commandsPermittedWhileUnverified := []string{"login"}
+	if !slices.Contains(commandsPermittedWhileUnverified, "/"+scr.primaryPane.ChatInput.Value()) && scr.state.sessionToken == "" {
+		scr.secondaryPane.Contents = append(scr.secondaryPane.Contents, "You can't do that before logging in!\n/login <user> <pass>")
+		scr.primaryPane.ChatInput.Reset()
+		return
+	}
 
 	switch command {
 
@@ -15,6 +25,13 @@ func (scr *AppMainModel) ProcessCommand(cmdData []string) {
 
 	case "quit":
 		tea.Quit()
+
+	case "charsay":
+		if len(cmdData) < 3 {
+			scr.secondaryPane.Contents = append(scr.secondaryPane.Contents, "Missing params: /charsay <char name> <message>")
+			return
+		}
+		client.Invoke("CharSay", cmdData[1], cmdData[2])
 
 	case "login":
 		if len(cmdData) < 3 {

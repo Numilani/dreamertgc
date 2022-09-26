@@ -29,9 +29,16 @@ const (
 	NoError
 )
 
-type AppMainModel struct {
-	stage         AppStage
-	errorState    ErrorState
+type AppState struct {
+	stage          AppStage
+	errorState     ErrorState
+	activeUsername string
+	loginToken     string
+	sessionToken   string
+}
+
+type AppModel struct {
+	state         AppState
 	rcv           ServerEventReceiver
 	altWindow     AltWindow
 	infoPane      CharacterPane
@@ -45,11 +52,11 @@ type AltWindow struct {
 	Contents  []string
 }
 
-func (scr *AppMainModel) Init() tea.Cmd {
+func (scr *AppModel) Init() tea.Cmd {
 	return RunSignalRClient(&scr.rcv)
 }
 
-func (scr *AppMainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (scr *AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
 	case ServerConnectionEstablishedMsg:
@@ -68,7 +75,7 @@ func (scr *AppMainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.ErrType {
 
 		case ServerConnectionTimeout:
-			scr.errorState = ServerConnectionTimeout
+			scr.state.errorState = ServerConnectionTimeout
 			scr.altWindow.Contents = append(scr.altWindow.Contents, "Server Connection Failed. Retry? (Y/N)")
 			return scr, nil
 
@@ -80,12 +87,12 @@ func (scr *AppMainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		// altscreen keystroke handlers
 		if scr.altWindow.IsFocused {
-			if scr.errorState == ServerConnectionTimeout {
+			if scr.state.errorState == ServerConnectionTimeout {
 				switch msg.Type {
 				case tea.KeyRunes:
 					switch string(msg.Runes) {
 					case "y":
-						scr.errorState = NoError
+						scr.state.errorState = NoError
 						return scr, RunSignalRClient(&scr.rcv)
 					case "n":
 						return scr, tea.Quit
@@ -99,10 +106,12 @@ func (scr *AppMainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch msg.Type {
 
 			case tea.KeyEnter:
-				if scr.primaryPane.ChatInput.Focused() && len(scr.primaryPane.ChatInput.Value()) > 0 {
-					if string(scr.primaryPane.ChatInput.Value()[0]) == "/" {
+				if scr.primaryPane.ChatInput.Focused() && len(scr.primaryPane.ChatInput.Value()) > 0 { // If there's something typed, handle it
+					if string(scr.primaryPane.ChatInput.Value()[0]) == "/" { // if it's a command, send to cmd handler
 						scr.secondaryPane.Contents = append(scr.secondaryPane.Contents, fmt.Sprintf("Sent command: %v", scr.primaryPane.ChatInput.Value()))
 						scr.ProcessCommand(strings.Split(scr.primaryPane.ChatInput.Value(), " "))
+					} else if string(scr.primaryPane.ChatInput.Value()[0]) != "/" && scr.state.sessionToken != "" { // if it's a chat (and you're logged in), send chat.
+						scr.primaryPane.Contents = append(scr.primaryPane.Contents, RenderSentChat("You", scr.primaryPane.ChatInput.Value()))
 					}
 					scr.primaryPane.ChatInput.Reset()
 				}
@@ -163,7 +172,7 @@ func (scr *AppMainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return scr, nil
 }
 
-func (scr *AppMainModel) View() string {
+func (scr *AppModel) View() string {
 	if scr.altWindow.IsFocused {
 		return RenderAltView(scr)
 	} else {
@@ -171,7 +180,7 @@ func (scr *AppMainModel) View() string {
 	}
 }
 
-func RenderMainView(scr *AppMainModel) string {
+func RenderMainView(scr *AppModel) string {
 	w, h, _ := term.GetSize(int(os.Stdout.Fd()))
 
 	rightStack := lipgloss.JoinVertical(lipgloss.Right, scr.primaryPane.RenderChatPane(w, h), scr.secondaryPane.RenderCommandPane(w, h))
@@ -180,7 +189,7 @@ func RenderMainView(scr *AppMainModel) string {
 	return mainApp + "\n" + scr.statusBar.RenderStatusBar(w)
 }
 
-func RenderAltView(scr *AppMainModel) string {
+func RenderAltView(scr *AppModel) string {
 	w, h, _ := term.GetSize(int(os.Stdout.Fd()))
 
 	mainStyle := lipgloss.NewStyle().
@@ -211,6 +220,7 @@ func (pp *ChatPane) RenderChatPane(w int, h int) string {
 	pp.ChatInput.CharLimit = 255
 	//pp.ChatInput.Placeholder = "Chat Goes Here..."
 
+	chatHistory.GotoBottom()
 	return style.Render(chatHistory.View() + "\n" + pp.ChatInput.View())
 }
 
@@ -224,7 +234,11 @@ func (sp *SystemPane) RenderCommandPane(w int, h int) string {
 	style := lipgloss.NewStyle().
 		Width(int((w/3)*2)-2).Height(int((h/3)-2)).Border(lipgloss.DoubleBorder(), true)
 
-	return style.Render(strings.Join(sp.Contents, "\n"))
+	vp := viewport.New(int((w/3)*2)-2, int((h/3)-2))
+	vp.SetContent(strings.Join(sp.Contents, "\n"))
+
+	vp.GotoBottom()
+	return style.Render(vp.View())
 }
 
 type StatusBar struct {

@@ -4,20 +4,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/charmbracelet/lipgloss"
-	"strings"
 )
 
 // CharacterPane handles the data for the leftmost pane of the main UI.
 type CharacterPane struct {
 	IsFocused bool
-	Contents  []string
+	Contents  string
 }
 
 func (ip *CharacterPane) RenderInfoPane(w int, h int) string {
 	style := lipgloss.NewStyle().
 		Width(int(w/3)-2).Height(int(h-3)).Border(lipgloss.DoubleBorder(), true)
 
-	return style.Render(strings.Join(ip.Contents, "\n"))
+	return style.Render(ip.Contents)
 }
 
 // CharacterStatusData represents a response from the server containing the full status of a character.

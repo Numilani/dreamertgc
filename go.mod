@@ -8,6 +8,7 @@ require (
 	github.com/charmbracelet/lipgloss v0.5.0
 	github.com/go-kit/log v0.2.0
 	github.com/philippseith/signalr v0.6.0
+	golang.org/x/exp v0.0.0-20220921164117-439092de6870
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
 )
 
