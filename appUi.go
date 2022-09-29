@@ -108,10 +108,13 @@ func (scr *AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case tea.KeyEnter:
 				if scr.primaryPane.ChatInput.Focused() && len(scr.primaryPane.ChatInput.Value()) > 0 { // If there's something typed, handle it
 					if string(scr.primaryPane.ChatInput.Value()[0]) == "/" { // if it's a command, send to cmd handler
-						scr.secondaryPane.Contents = append(scr.secondaryPane.Contents, fmt.Sprintf("Sent command: %v", scr.primaryPane.ChatInput.Value()))
 						scr.ProcessCommand(strings.Split(scr.primaryPane.ChatInput.Value(), " "))
-					} else if string(scr.primaryPane.ChatInput.Value()[0]) != "/" && scr.state.sessionToken != "" { // if it's a chat (and you're logged in), send chat.
-						scr.primaryPane.Contents = append(scr.primaryPane.Contents, RenderSentChat("You", scr.primaryPane.ChatInput.Value()))
+					} else if string(scr.primaryPane.ChatInput.Value()[0]) != "/" {
+						if scr.state.sessionToken == "" { // no chatting if not logged in!
+							scr.secondaryPane.Contents = append(scr.secondaryPane.Contents, "You can't chat before you log in!")
+						} else {
+							scr.ProcessChat()
+						}
 					}
 					scr.primaryPane.ChatInput.Reset()
 				}

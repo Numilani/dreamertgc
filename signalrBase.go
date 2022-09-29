@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/go-kit/log"
@@ -78,7 +79,12 @@ func (scr *AppModel) Listen(ch chan ServerDataChunk) tea.Cmd {
 		switch chunk.CallerName {
 
 		case "ReceivePlayerStats":
-			scr.infoPane.Contents = chunk.Data.(CharacterStatusData).Name + "\n    HP: " + strconv.Itoa(chunk.Data.(CharacterStatusData).Hp)
+			var stats CharacterStatusData
+			err := json.Unmarshal([]byte(chunk.Data.(string)), &stats)
+			if err != nil {
+				fmt.Println(err)
+			}
+			scr.infoPane.Contents = stats.Name + "\n    HP: " + strconv.Itoa(stats.Hp)
 
 		case "ReceiveLoginToken":
 			if chunk.Data.(string) == "invalid_credentials" {
@@ -86,15 +92,24 @@ func (scr *AppModel) Listen(ch chan ServerDataChunk) tea.Cmd {
 				break
 			}
 			scr.secondaryPane.Contents = append(scr.secondaryPane.Contents, fmt.Sprintf("Login token received: %v", chunk.Data.(string)))
+			scr.state.sessionToken = chunk.Data.(string)
+			client.Invoke("LoginWithToken", scr.state.sessionToken)
 
 		case "ReceiveSessionToken":
-			if chunk.Data.(string) == "invalid_usertoken" {
-				scr.secondaryPane.Contents = append(scr.secondaryPane.Contents, fmt.Sprintf("User token rejected: %v", chunk.Data.(string)))
+			if chunk.Data.(int) == -1 {
+				scr.secondaryPane.Contents = append(scr.secondaryPane.Contents, fmt.Sprintf("User token rejected: %v", chunk.Data.(int)))
 				break
 			}
-			scr.secondaryPane.Contents = append(scr.secondaryPane.Contents, fmt.Sprintf("Logged in, session token is: %v", chunk.Data.(string)))
+			scr.secondaryPane.Contents = append(scr.secondaryPane.Contents, fmt.Sprintf("Logged in, session token is: %v", chunk.Data.(int)))
 		}
 
 		return ServerDataReceivedMsg{}
+	}
+}
+
+func (c *ServerEventReceiver) Receive(caller string, data any) {
+	c.UiUpdateChannel <- ServerDataChunk{
+		CallerName: caller,
+		Data:       data,
 	}
 }
