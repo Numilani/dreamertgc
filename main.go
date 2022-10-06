@@ -12,8 +12,6 @@ var client signalr.Client
 var state = AppState{
 	stage:          Starting,
 	errorState:     NoError,
-	activeUsername: "",
-	loginToken:     "",
 	sessionToken:   "",
 }
 

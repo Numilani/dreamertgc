@@ -11,7 +11,7 @@ func (scr *AppModel) ProcessCommand(cmdData []string) {
 
 	command := cmdData[0][1:]
 
-	commandsPermittedWhileUnverified := []string{"login"}
+	commandsPermittedWhileUnverified := []string{"login", "tokentest"}
 	if !slices.Contains(commandsPermittedWhileUnverified, command) && scr.state.sessionToken == "" {
 		scr.secondaryPane.Contents = append(scr.secondaryPane.Contents, "You can't do that before logging in!\n/login <user> <pass>")
 		scr.primaryPane.ChatInput.Reset()
@@ -44,11 +44,11 @@ func (scr *AppModel) ProcessCommand(cmdData []string) {
 		client.Invoke("GetLoginToken", cmdData[1], cmdData[2])
 
 	case "tokentest":
-		if len(cmdData) < 2 {
-			scr.secondaryPane.Contents = append(scr.secondaryPane.Contents, "Missing params: /tokentest <token>")
+		if len(cmdData) < 3 {
+			scr.secondaryPane.Contents = append(scr.secondaryPane.Contents, "Missing params: /tokentest <username> <token>")
 			return
 		}
-		client.Invoke("LoginWithToken", cmdData[1])
+		client.Invoke("LoginWithToken", cmdData[1], cmdData[2])
 	}
 
 }

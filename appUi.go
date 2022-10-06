@@ -29,11 +29,15 @@ const (
 	NoError
 )
 
+type AppConfiguration struct {
+	activeUsername string
+	loginToken string
+}
+
 type AppState struct {
 	stage          AppStage
 	errorState     ErrorState
-	activeUsername string
-	loginToken     string
+	cfg AppConfiguration
 	sessionToken   string
 }
 

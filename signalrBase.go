@@ -92,15 +92,15 @@ func (scr *AppModel) Listen(ch chan ServerDataChunk) tea.Cmd {
 				break
 			}
 			scr.secondaryPane.Contents = append(scr.secondaryPane.Contents, fmt.Sprintf("Login token received: %v", chunk.Data.(string)))
-			scr.state.sessionToken = chunk.Data.(string)
 			client.Invoke("LoginWithToken", scr.state.sessionToken)
 
 		case "ReceiveSessionToken":
-			if chunk.Data.(int) == -1 {
-				scr.secondaryPane.Contents = append(scr.secondaryPane.Contents, fmt.Sprintf("User token rejected: %v", chunk.Data.(int)))
+			if chunk.Data.(string) == "notoken" {
+				scr.secondaryPane.Contents = append(scr.secondaryPane.Contents, fmt.Sprintf("User token rejected: %v", chunk.Data.(string)))
 				break
 			}
-			scr.secondaryPane.Contents = append(scr.secondaryPane.Contents, fmt.Sprintf("Logged in, session token is: %v", chunk.Data.(int)))
+			scr.state.sessionToken = chunk.Data.(string)
+			scr.secondaryPane.Contents = append(scr.secondaryPane.Contents, fmt.Sprintf("Logged in, session token is: %v", chunk.Data.(string)))
 		}
 
 		return ServerDataReceivedMsg{}
