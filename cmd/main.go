@@ -1,6 +1,8 @@
 package main
 
 import (
+	. "dreamer_tgc/internal"
+	. "dreamer_tgc/internal/renderers"
 	"fmt"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -11,17 +13,18 @@ import (
 
 var client signalr.Client
 var state = AppState{
-	stage:      Starting,
-	errorState: NoError,
+	Stage:      Starting,
+	ErrorState: NoError,
 }
 var Application = AppModel{
-	state:         state,
-	rcv:           ServerEventReceiver{UiUpdateChannel: make(chan ServerDataChunk)},
-	altWindow:     AltWindow{IsFocused: true, Contents: []string{"Connecting to server..."}},
-	infoPane:      CharacterPane{Contents: "Log in to view character Data"},
-	primaryPane:   ChatPane{Contents: []string{}, ChatInput: textinput.New()},
-	secondaryPane: SystemPane{Contents: []string{}},
-	statusBar:     StatusBar{LeftBlurb: "NUMI'S TEST CLIENT", RightBlurb: "v0.01a", MiddleString: "L: Loading..."},
+	State:            state,
+	ConnectionClient: client,
+	Rcv:              ServerEventReceiver{UiUpdateChannel: make(chan ServerDataChunk)},
+	AltWindow:        AltWindow{IsFocused: true, Contents: []string{"Connecting to server..."}},
+	InfoPane:         CharacterPane{Contents: "Log in to view character Data"},
+	PrimaryPane:      ChatPane{Contents: []string{}, ChatInput: textinput.New()},
+	SecondaryPane:    SystemPane{Contents: []string{}},
+	StatusBar:        StatusBar{LeftBlurb: "NUMI'S TEST CLIENT", RightBlurb: "v0.01a", MiddleString: "L: Loading..."},
 }
 
 func main() {

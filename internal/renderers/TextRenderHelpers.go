@@ -1,4 +1,4 @@
-package main
+package renderers
 
 import "github.com/charmbracelet/lipgloss"
 
