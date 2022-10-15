@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/spf13/viper"
 	"golang.org/x/term"
 	"os"
 	"strings"
@@ -30,11 +31,8 @@ const (
 )
 
 type AppState struct {
-	stage          AppStage
-	errorState     ErrorState
-	activeUsername string
-	loginToken     string
-	sessionToken   string
+	stage      AppStage
+	errorState ErrorState
 }
 
 type AppModel struct {
@@ -45,11 +43,6 @@ type AppModel struct {
 	primaryPane   ChatPane
 	secondaryPane SystemPane
 	statusBar     StatusBar
-}
-
-type AltWindow struct {
-	IsFocused bool
-	Contents  []string
 }
 
 func (scr *AppModel) Init() tea.Cmd {
@@ -110,7 +103,7 @@ func (scr *AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if string(scr.primaryPane.ChatInput.Value()[0]) == "/" { // if it's a command, send to cmd handler
 						scr.ProcessCommand(strings.Split(scr.primaryPane.ChatInput.Value(), " "))
 					} else if string(scr.primaryPane.ChatInput.Value()[0]) != "/" {
-						if scr.state.sessionToken == "" { // no chatting if not logged in!
+						if viper.GetString("sessionToken") == "" { // no chatting if not logged in!
 							scr.secondaryPane.Contents = append(scr.secondaryPane.Contents, "You can't chat before you log in!")
 						} else {
 							scr.ProcessChat()
@@ -190,6 +183,11 @@ func RenderMainView(scr *AppModel) string {
 	mainApp := lipgloss.JoinHorizontal(lipgloss.Top, scr.infoPane.RenderInfoPane(w, h), rightStack)
 
 	return mainApp + "\n" + scr.statusBar.RenderStatusBar(w)
+}
+
+type AltWindow struct {
+	IsFocused bool
+	Contents  []string
 }
 
 func RenderAltView(scr *AppModel) string {

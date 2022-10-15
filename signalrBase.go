@@ -7,6 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/go-kit/log"
 	"github.com/philippseith/signalr"
+	"github.com/spf13/viper"
 	"strconv"
 	"time"
 )
@@ -41,7 +42,7 @@ func RunSignalRClient(receiver *ServerEventReceiver) tea.Cmd {
 			signalr.WithReceiver(receiver),
 			signalr.WithConnector(func() (signalr.Connection, error) {
 				creationCtx, _ := context.WithTimeout(context.Background(), 2*time.Second)
-				return signalr.NewHTTPConnection(creationCtx, "https://localhost:7277/test")
+				return signalr.NewHTTPConnection(creationCtx, viper.GetString("serverUrl")+"/test")
 			}),
 			signalr.Logger(log.NewNopLogger(), false))
 		//nil)
@@ -92,8 +93,8 @@ func (scr *AppModel) Listen(ch chan ServerDataChunk) tea.Cmd {
 				break
 			}
 			scr.secondaryPane.Contents = append(scr.secondaryPane.Contents, fmt.Sprintf("Login token received: %v", chunk.Data.(string)))
-			scr.state.sessionToken = chunk.Data.(string)
-			client.Invoke("LoginWithToken", scr.state.sessionToken)
+			viper.Set("sessionToken", chunk.Data.(string))
+			client.Invoke("LoginWithToken", viper.GetString("sessionToken"))
 
 		case "ReceiveSessionToken":
 			if chunk.Data.(int) == -1 {

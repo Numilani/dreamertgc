@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/spf13/viper"
 	"golang.org/x/exp/slices"
 )
 
@@ -12,7 +13,7 @@ func (scr *AppModel) ProcessCommand(cmdData []string) {
 	command := cmdData[0][1:]
 
 	commandsPermittedWhileUnverified := []string{"login"}
-	if !slices.Contains(commandsPermittedWhileUnverified, command) && scr.state.sessionToken == "" {
+	if !slices.Contains(commandsPermittedWhileUnverified, command) && viper.GetString("sessionToken") == "" {
 		scr.secondaryPane.Contents = append(scr.secondaryPane.Contents, "You can't do that before logging in!\n/login <user> <pass>")
 		scr.primaryPane.ChatInput.Reset()
 		return

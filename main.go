@@ -5,18 +5,15 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	signalr "github.com/philippseith/signalr"
+	viper "github.com/spf13/viper"
 	"os"
 )
 
 var client signalr.Client
 var state = AppState{
-	stage:          Starting,
-	errorState:     NoError,
-	activeUsername: "",
-	loginToken:     "",
-	sessionToken:   "",
+	stage:      Starting,
+	errorState: NoError,
 }
-
 var Application = AppModel{
 	state:         state,
 	rcv:           ServerEventReceiver{UiUpdateChannel: make(chan ServerDataChunk)},
@@ -28,6 +25,15 @@ var Application = AppModel{
 }
 
 func main() {
+	// set up config file
+	viper.SetConfigName("settings")
+	viper.SetConfigType("json")
+	viper.AddConfigPath(".")
+	err := viper.ReadInConfig()
+	if err != nil {
+		fmt.Printf("Couldn't read config!")
+	}
+
 	programUi := tea.NewProgram(&Application, tea.WithAltScreen())
 	if err := programUi.Start(); err != nil {
 		fmt.Printf("An error occurred: %v", err)
